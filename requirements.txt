@@ -1,0 +1,8 @@
+editdistance
+-e git://github.com/NVlabs/dlinputs.git#egg=dlinputs
+-e git://github.com/NVlabs/dltrainers.git#egg=dltrainers
+-e git://github.com/NVlabs/ocrobin.git#egg=ocrobin
+-e git://github.com/NVlabs/ocrorot.git#egg=ocrorot
+-e git://github.com/NVlabs/ocroseg.git#egg=ocroseg
+-e git://github.com/NVlabs/ocroline.git#egg=ocroline
+-e git://github.com/tmbdev/cctc.git#egg=cctc
