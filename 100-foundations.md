@@ -59,19 +59,24 @@ from torchmore.layers import Fun, Fun_
 
 # PyTorch Equivalent
 
-    nn.Sequential(
-        layers.Input("BDHW", size=(None, 1, 28, 28)),
-        flex.Conv2d(4, 5),
-        nn.Sigmoid(),
-        nn.AvgPool(2),
-        flex.Conv2d(12, 5),
-        nn.Sigmoid(),
-        nn.AvgPool(2),
-        layers.Reshape(0, [1, 2, 3]),
-        flex.Linear(26)
-    )
-
 <!-- #endregion -->
+```python slideshow={"slide_type": "-"}
+from torch import nn
+from torchmore import layers, flex
+
+model = nn.Sequential(
+    layers.Input("BDHW", sizes=(None, 1, 28, 28)),
+    flex.Conv2d(4, 5),
+    nn.Sigmoid(),
+    nn.AvgPool2d(2),
+    flex.Conv2d(12, 5),
+    nn.Sigmoid(),
+    nn.AvgPool2d(2),
+    layers.Reshape(0, [1, 2, 3]),
+    flex.Linear(26)
+)
+```
+
 <!-- #region {"slideshow": {"slide_type": "slide"}} -->
 
 # Function Approximation View
@@ -125,12 +130,63 @@ Therefore:
 - convert each class label to a one-hot encoding
 - perform least square approximation of $y_i^{(k)} = f_\theta(x^{(k)})$
   for all training samples $x^{(k)}, y^{(k)}$
-- use the estimate $\tilde{\theta}$ to make decisions, as in
-  - $y = f_{\tilde{\theta}}(x)$
-  - $\tilde{P}(\omega | x) = y_\omega$
-  - $D(x) = \arg\max_\omega \tilde{P}(\omega | x)$
+- use the estimate $\tilde{\theta}$ to make decisions: $\tilde{P}(\omega | x) = f_{\tilde{\theta}}(x)$
 
 <!-- #endregion -->
+```python slideshow={"slide_type": "slide"}
+from numpy import random
+n=100
+x1 = random.normal(size=n)
+x2 = random.normal(size=n)+2
+data = array(sorted(list(zip(hstack([x1,x2]), [0]*n+[1]*n))))
+inputs = data[:,0].reshape(-1, 1)
+targets = data[:, 1].reshape(-1, 1)
+plot(inputs[:,0], targets[:,0], alpha=0.1, color="gray")
+scatter(inputs[:,0], targets[:,0], marker='.', c=targets[:,0], cmap=cm.RdBu)
+```
+
+```python
+from scipy.ndimage import filters
+def density(samples, lo=-3, hi=6):
+    data = zeros(1000, "f")
+    coords = clip(array((samples-lo) / (hi-lo) * 1000, "i"), 0, 999)
+    data[coords] = 1.0
+    data = filters.gaussian_filter(data, 50.0, mode="constant")
+    return data / sum(data)
+plot(linspace(-3, 6, 1000), density(x1)); plot(linspace(-3, 6, 1000), density(x2))
+```
+
+```python
+plot(density(x2) / (density(x1) + density(x2) + 1e-6))
+```
+
+```python slideshow={"slide_type": "skip"}
+inputs = torch.tensor(inputs).float()
+targets = torch.tensor(targets).float()
+```
+
+```python slideshow={"slide_type": "slide"}
+model = nn.Sequential(flex.Linear(5), nn.Sigmoid(), flex.Linear(1), nn.Sigmoid())
+flex.shape_inference(model, inputs.shape)
+mseloss = torch.nn.MSELoss()
+optimizer = torch.optim.SGD(model.parameters(), lr=1)
+losses = []
+for i in range(1000):
+    optimizer.zero_grad()
+    outputs = model(inputs)
+    loss = mseloss(outputs, targets)
+    losses.append(float(loss))
+    loss.backward()
+    optimizer.step()
+plot(losses)
+```
+
+```python slideshow={"slide_type": "slide"}
+test = torch.tensor(linspace(-1, 3, 1000).reshape(-1, 1)).float()
+pred = model(test)
+plot(test[:,0].detach().numpy(), pred[:,0].detach().numpy())
+```
+
 <!-- #region {"slideshow": {"slide_type": "slide"}} -->
 
 # Model Selection and Regularization
