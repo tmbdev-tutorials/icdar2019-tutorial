@@ -1,10 +1,35 @@
 ---
-marp: true
+jupyter:
+  jupytext:
+    formats: ipynb,md
+    text_representation:
+      extension: .md
+      format_name: markdown
+      format_version: '1.1'
+      jupytext_version: 1.2.3
+  kernelspec:
+    display_name: Python 3
+    language: python
+    name: python3
 ---
+
+```python slideshow={"slide_type": "skip"}
+%pylab inline
+```
+
+```python slideshow={"slide_type": "skip"}
+import torch
+from torch import nn, optim
+import torch.nn.functional as F
+from torchmore.layers import Fun, Fun_
+```
+
+<!-- #region {"slideshow": {"slide_type": "slide"}} -->
 
 # FOUNDATIONS
 
----
+<!-- #endregion -->
+<!-- #region {"slideshow": {"slide_type": "slide"}} -->
 
 # Original Convolutional Networks
 
@@ -15,19 +40,22 @@ marp: true
 - gradient descent training
 - scanning for multi-object localization
 
----
+<!-- #endregion -->
+<!-- #region {"slideshow": {"slide_type": "slide"}} -->
 
 # Architecture
 
 ![architecture](figs/lecun-arch.png)
 
----
+<!-- #endregion -->
+<!-- #region {"slideshow": {"slide_type": "slide"}} -->
 
 # Application to Handwriting
 
 ![LeCun handwriting](figs/lecun-scanning.png)
 
----
+<!-- #endregion -->
+<!-- #region {"slideshow": {"slide_type": "slide"}} -->
 
 # PyTorch Equivalent
 
@@ -43,7 +71,8 @@ marp: true
         flex.Linear(26)
     )
 
----
+<!-- #endregion -->
+<!-- #region {"slideshow": {"slide_type": "slide"}} -->
 
 # Function Approximation View
 
@@ -51,7 +80,8 @@ marp: true
 - multilayer neural networks with sigmoids are _universal approximators_
 - that is: if large enough, they can approximate any function arbitrarily well
 
----
+<!-- #endregion -->
+<!-- #region {"slideshow": {"slide_type": "slide"}} -->
 
 # Pattern Recognition View
 
@@ -61,7 +91,8 @@ marp: true
 - instead, approximate _discriminant functions_ such that $D(x) =\arg\max_\omega f(x)$
 - the larger $f_\omega(x)$, the more $x$ "belongs to" class $\omega$
 
----
+<!-- #endregion -->
+<!-- #region {"slideshow": {"slide_type": "slide"}} -->
 
 # Neural Networks and Classification
 
@@ -69,7 +100,8 @@ marp: true
 - approximate discriminant functions using the network
 - classify based on those approximations
 
----
+<!-- #endregion -->
+<!-- #region {"slideshow": {"slide_type": "slide"}} -->
 
 # Bayesian Decision Theory
 
@@ -81,7 +113,8 @@ marp: true
 - this is accomplished by choosing $D(x) = \arg\max_\omega P(\omega | x)$
 - this decision rule is Bayes optimal: no other rule can give better performance
 
----
+<!-- #endregion -->
+<!-- #region {"slideshow": {"slide_type": "slide"}} -->
 
 # Neural Networks and Posteriors
 
@@ -97,7 +130,8 @@ Therefore:
   - $\tilde{P}(\omega | x) = y_\omega$
   - $D(x) = \arg\max_\omega \tilde{P}(\omega | x)$
 
----
+<!-- #endregion -->
+<!-- #region {"slideshow": {"slide_type": "slide"}} -->
 
 # Model Selection and Regularization
 
@@ -111,7 +145,8 @@ Therefore:
   - model selection
 - traditional view: "neural networks have too many parameters to generalize well"
 
----
+<!-- #endregion -->
+<!-- #region {"slideshow": {"slide_type": "slide"}} -->
 
 # Linear Layers
 
@@ -121,7 +156,8 @@ $y = \sigma(M\cdot x+b)$ -- logistic regression
 
 $y = H(M \cdot x + b)$ -- linear decision boundaries ($H(x) = \left\lfloor x > 0 \right\rfloor$)
 
----
+<!-- #endregion -->
+<!-- #region {"slideshow": {"slide_type": "slide"}} -->
 
 # Theory of Linear Classifiers
 
@@ -132,21 +168,26 @@ $y = H(M \cdot x + b)$ -- linear decision boundaries ($H(x) = \left\lfloor x > 0
     $x \rightarrow (1, x_1,...,x_n, x_1x_1, x_1x_2, ... x_ix_j ..., x_nx_n)$
 - quadratic classifier sufficient for all classification problems with normal c.c.d.'s
 
----
+<!-- #endregion -->
+<!-- #region {"slideshow": {"slide_type": "slide"}} -->
 
 # Two Linear Layers
 
-    nn.Sequential(
+- equivalent to RBF layer or prototype-based classification
+- universal approximator
+
+<!-- #endregion -->
+```python
+def make_model(n0, n1, n2):
+    return nn.Sequential(
         nn.Linear(n0, n1),
         nn.Sigmoid(),
         nn.Linear(n1, n2),
         nn.Sigmoid()
     )
+```
 
-- equivalent to RBF layer or prototype-based classification
-- universal approximator
-
----
+<!-- #region {"slideshow": {"slide_type": "slide"}} -->
 
 # Composition of Layers
 
@@ -154,17 +195,25 @@ $y = H(M \cdot x + b)$ -- linear decision boundaries ($H(x) = \left\lfloor x > 0
 
 This is effectively the same as `nn.Sequential(nn.Linear(n0, n2))`
 
----
+<!-- #endregion -->
+<!-- #region {"slideshow": {"slide_type": "slide"}} -->
 
 # Scale Factors and Composition
-
-    nn.Sequential(nn.Linear(n0, n1), nn.Sigmoid(), Fun(lambda x: scale*x), nn.Linear(n1, n2))
 
 - the scale factor can usually be incorporated into the second linear layer
 - the possibility of scaling means that the sigmoid can operate in its exponential, linear, or logarithmic regime
 - this analysis changes, however, for ReLU and batch normalization
 
----
+<!-- #endregion -->
+```python
+def make_model(n0, n1, n2, scale):
+    return nn.Sequential(
+        nn.Linear(n0, n1),
+        nn.Sigmoid(), Fun_(lambda x: scale*x),
+        nn.Linear(n1, n2))
+```
+
+<!-- #region {"slideshow": {"slide_type": "slide"}} -->
 
 # Linear Layer vs RBF
 
@@ -184,7 +233,8 @@ for
 
 $m = -2 \mu$ and $b = ||\mu||^2 + 1$
 
----
+<!-- #endregion -->
+<!-- #region {"slideshow": {"slide_type": "slide"}} -->
 
 # Linear Layer vs RBF, VQ
 
@@ -192,7 +242,8 @@ $m = -2 \mu$ and $b = ||\mu||^2 + 1$
 - When such an output is passed through a sigmoid, it can approximate Gaussian RBFs or other RBF kernels.
 - When used with an exponential nonlinearity or softmax, this can make a layer operate like a vector quantizer.
 
----
+<!-- #endregion -->
+<!-- #region {"slideshow": {"slide_type": "slide"}} -->
 
 # Linear Layers vs PCA/ICA
 
@@ -206,7 +257,8 @@ PCA is related to the autoencoder:
 
 PCA attempts to remove noise components while maintaining relevant components.
 
----
+<!-- #endregion -->
+<!-- #region {"slideshow": {"slide_type": "slide"}} -->
 
 # Summary of Linear Layers
 
@@ -219,7 +271,8 @@ Linear Layers can compute:
 
 Which they compute depends on the loss/objective functions, input normalization, training data, and dimensionalities involved.
 
----
+<!-- #endregion -->
+<!-- #region {"slideshow": {"slide_type": "slide"}} -->
 
 # Convolutional Layers
 
@@ -230,7 +283,8 @@ Convolutional layers are:
 - taking a small window as input
 - sliding over the input image
 
----
+<!-- #endregion -->
+<!-- #region {"slideshow": {"slide_type": "slide"}} -->
 
 # "Network in Network"
 
@@ -244,7 +298,8 @@ Convolutional layers are:
             nn.Sigmoid()
         )
 
----
+<!-- #endregion -->
+<!-- #region {"slideshow": {"slide_type": "slide"}} -->
 
 # Convolutions as Matched Filters
 
@@ -256,7 +311,8 @@ Convolutional layers are:
   - put the score for that match into the corresponding output channel
 - this is called a "matched filter" in signal processing
 
----
+<!-- #endregion -->
+<!-- #region {"slideshow": {"slide_type": "slide"}} -->
 
 # Convolutions for Image Processing
 
@@ -267,7 +323,8 @@ Convolutional layers are:
   - correct color
   - enhance features of interest
 
----
+<!-- #endregion -->
+<!-- #region {"slideshow": {"slide_type": "slide"}} -->
 
 # Convolutions for Image Processing
 
@@ -279,7 +336,8 @@ Convolutional layers are:
   - separability (used in Inception)
   - Fourier transform layers (available in PyTorch)
 
----
+<!-- #endregion -->
+<!-- #region {"slideshow": {"slide_type": "slide"}} -->
 
 # Average Pooling and Sampling
 
@@ -290,7 +348,8 @@ Convolutional layers are:
   - sampling theorem
   - aliasing theorems
 
----
+<!-- #endregion -->
+<!-- #region {"slideshow": {"slide_type": "slide"}} -->
 
 # Feature Hierarchies
 
@@ -302,11 +361,13 @@ Convolutional layers are:
   - observations of neural activity and processing stages in animals
 
 
----
+<!-- #endregion -->
+<!-- #region {"slideshow": {"slide_type": "slide"}} -->
 
 ![brain areas](figs/brain-areas.png)
 
----
+<!-- #endregion -->
+<!-- #region {"slideshow": {"slide_type": "slide"}} -->
 
 # Feature Hierarchies
 
@@ -319,3 +380,4 @@ Convolutional layers are:
   - entire objects
 - little sound theoretical foundation
 
+<!-- #endregion -->

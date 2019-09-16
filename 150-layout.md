@@ -1,8 +1,17 @@
----
+```python
+%pylab inline
+```
+
+```python
+import torch
+from torch import nn
+from torchmore import layers, flex
+```
+
 
 # LAYOUT MODELS
 
----
+
 
 # Layout Analysis
 
@@ -13,11 +22,11 @@ Goals of document layout analysis:
 - find words within text lines
 - determine reading order
 
----
+
 
 FIXME references and sample images
 
----
+
 
 # RCNN for Layout Analysis
 
@@ -29,7 +38,7 @@ FIXME references and sample images
 
 FIXME reference
 
----
+
 
 # Layout Analysis as Semantic Segmentation
 
@@ -41,7 +50,7 @@ FIXME reference
   - centerline / background
   - text / image / text line separator / column separator
 
----
+
 
 # What do we label?
 
@@ -57,7 +66,7 @@ Very different results:
 - all pixels in a region = group pixels together by connected components
 - labeling / segmentation closely linked to intended post-processing for region extraction
 
----
+
 
 # Page Level Segmentation
 
@@ -74,7 +83,7 @@ Different uses:
 - extract text regions via connected components (requires higher quality segmentation)
 
 
----
+
 
 # Simple Approach
 
@@ -89,7 +98,7 @@ Problem:
 - word bounding boxes are often overlapping
 - how do we turn the resulting binary image into something we can feed to a word recognizer?
 
----
+
 
 # Centerline / Baseline Approach
 
@@ -104,7 +113,7 @@ Properties:
 - works better than the simple approach
 - still need to use non-DL mechanisms to find the word/line bounding boxes from the seeds
 
----
+
 
 # Marker Plus Separator Approach
 
@@ -123,15 +132,15 @@ Properties:
 - functions like RCNN, in that it finds both the location and the size of object instances (words/lines)
 - simpler to understand/tune: we can see the marker/boundary proposals
 
----
+
 
 FIXME examples from marker-plus-separator approach
 
----
+
 
 # Footprint and Global Context for Page Segmentation
 
----
+
 
 # Semi-Supervised and Weakly Supervised Approaches
 

@@ -1,8 +1,7 @@
----
 
 # MODERN DEEP LEARNING ERA
 
----
+
 
 # Breakthrough Paper
 
@@ -18,13 +17,13 @@
 
 None of these were new ideas, but this paper brought it all together.
 
----
+
 
 # Alexnet Architecture
 
 ![alexnet](figs/alexnet.png)
 
----
+
 
 # Alexnet Architecture (approximately)
 
@@ -46,13 +45,13 @@ None of these were new ideas, but this paper brought it all together.
         flex.Linear(1000)
     )
 
----
+
 
 # Alexnet Learned Features
 
 ![alexnet features](figs/alexnet-features.png)
 
----
+
 
 # ReLU
 
@@ -60,13 +59,13 @@ None of these were new ideas, but this paper brought it all together.
 
 $\sigma(x) = (1 + e^{-x})^{-1}$, $\rho(x) = \max(0, x)$
 
----
+
 
 # ReLU Derivatives
 
 ![relu deriv](figs/relu-deriv.png)
 
----
+
 
 # Nonlinearity Properties
 
@@ -78,7 +77,7 @@ $\sigma(x) = (1 + e^{-x})^{-1}$, $\rho(x) = \max(0, x)$
 | range             | $(0, 1)$         | $(0, \infty)$     |
 | zero-derivative   | none             | $(-\infty, 0)$    |
 
----
+
 
 # ReLU
 
@@ -90,7 +89,7 @@ $\sigma(x) = (1 + e^{-x})^{-1}$, $\rho(x) = \max(0, x)$
 - results in piecewise linear approximations to functions
 - results in classifiers based on linear arrangements
 
----
+
 
 # Max Pooling
 
@@ -100,7 +99,7 @@ $\sigma(x) = (1 + e^{-x})^{-1}$, $\rho(x) = \max(0, x)$
 - performed per channel
 - nonlinear operation, somewhat similar to morphological operations
 
----
+
 
 # Local Response Normalization
 
@@ -113,7 +112,7 @@ $$ y = x \cdot (k + \alpha (K * |x|^\gamma) ^ \beta)^-1 $$
 
 In later models, this is effectively replaced by batch normalization.
 
----
+
 
 # Dropout
 
@@ -121,7 +120,7 @@ In later models, this is effectively replaced by batch normalization.
 - motivated by an approximation to an ensemble of networks
 - intended to lead to better generalization from limited samples
 
----
+
 
 # Data Augmentation
 
@@ -133,11 +132,11 @@ In later models, this is effectively replaced by batch normalization.
   - random photometric transforms
   - addition of noise, distractors, masking
 
----
+
 
 # FURTHER DEVELOPMENTS
 
----
+
 
 # Batch Normalization
 
@@ -148,7 +147,7 @@ In later models, this is effectively replaced by batch normalization.
 - instead normalizes mean and variance for each neuron
 - normalization based on batch statistics (and running statistics)
 
----
+
 
 # Inception
 
@@ -158,7 +157,7 @@ Szegedy, Christian, et al. "Rethinking the inception architecture for computer v
 - separable convolutions for large footprints
 - "label smoothing"
 
----
+
 
 # VGG Networks
 
@@ -168,7 +167,7 @@ Simonyan, Karen, and Andrew Zisserman. "Very deep convolutional networks for lar
 - multiple convolutions + max pooling
 - combined with batch normalization in later systems
 
----
+
 
 # Residual Networks
 
@@ -179,11 +178,11 @@ He, Kaiming, et al. "Deep residual learning for image recognition." Proceedings 
 - the output of the convolutional layers is added to the input
 - ReLU and batch normalization is used throughout
 
----
+
 
 # LOCALIZATION
 
----
+
 
 # Localization of Objects
 
@@ -194,28 +193,29 @@ He, Kaiming, et al. "Deep residual learning for image recognition." Proceedings 
   - region proposals (RCNN etc.)
   - learning dense markers / segmentation
 
----
+
 
 # Global Classification
+```python
+def conv2d_block(d):
+    return nn.Sequential(
+        flex.Conv2d(d, 3, padding=1), flex.BatchNorm2d(), flex.ReLU(),
+        flex.Conv2d(d, 3, padding=1), flex.BatchNorm2d(), flex.ReLU(),
+        flex.MaxPool2d(),
+    )
 
-        def conv2d_block(d):
-            return nn.Sequential(
-                flex.Conv2d(d, 3, padding=1), flex.BatchNorm2d(), flex.ReLU(),
-                flex.Conv2d(d, 3, padding=1), flex.BatchNorm2d(), flex.ReLU(),
-                flex.MaxPool2d(),
-            )
+def make_model():
+    return nn.Sequential(
+        *conv2d_block(64), *conv2d_block(128), *conv2d_block(256), 
+        *conv2d_block(512), *conv2d_block(1024), *conv2d_block(2048),
+        # we have a (None, 2048, 4, 4) batch at this point
+        layers.Reshape(0, [1, 2, 3]),
+        flex.Linear(4096), flex.BatchNorm(), nn.ReLU(),
+        flex.Linear(4096), flex.BatchNorm(), nn.ReLU(),
+        flex.Linear(1000)
+    )
+```
 
-        nn.Sequential(
-            *conv2d_block(64), *conv2d_block(128), *conv2d_block(256), 
-            *conv2d_block(512), *conv2d_block(1024), *conv2d_block(2048),
-            # we have a (None, 2048, 4, 4) batch at this point
-            layers.Reshape(0, [1, 2, 3]),
-            flex.Linear(4096), flex.BatchNorm(), nn.ReLU(),
-            flex.Linear(4096), flex.BatchNorm(), nn.ReLU(),
-            flex.Linear(1000)
-        )
-
----
 
 # Sliding Windows
 
@@ -225,7 +225,7 @@ Sermanet, Pierre, et al. "Overfeat: Integrated recognition, localization and det
 
 
 
----
+
 
 # Region Proposal Network
 

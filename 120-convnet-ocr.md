@@ -1,8 +1,17 @@
----
+```python
+%pylab inline
+```
+
+```python
+import torch
+from torch import nn
+from torchmore import flex, layers
+```
+
 
 # APPLICATIONS TO OCR
 
----
+
 
 # Character Recognition
 
@@ -12,9 +21,6 @@
 
 Goodfellow, Ian J., et al. "Multi-digit number recognition from street view imagery using deep convolutional neural networks." arXiv preprint arXiv:1312.6082 (2013).
 
-- applies convolutional networks directly to digit recognition
-
----
 
 # Word Recognition
 
@@ -25,7 +31,7 @@ Goodfellow, Ian J., et al. "Multi-digit number recognition from street view imag
 
 Jaderberg, Max, et al. "Deep structured output learning for unconstrained text recognition." arXiv preprint arXiv:1412.5903 (2014).
 
----
+
 
 # Better Techniques
 
@@ -36,20 +42,23 @@ Jaderberg, Max, et al. "Deep structured output learning for unconstrained text r
   - use markers for localizing/bounding text (later)
   - use sequence learning techniques and CTC for alignment and OCR learning
 
----
+
 
 # Using Convolutional Networks for OCR
 
-        nn.Sequential(
-            # BDHW
-            *convolutional_layers(),
-            # BDHW, now reduce along the vertical
-            layers.Fun(lambda x: x.sum(2)),
-            # BDW
-            layers.Conv1d(num_classes, 1)
-        )
 
----
+```python
+def make_model():
+    return nn.Sequential(
+        # BDHW
+        *convolutional_layers(),
+        # BDHW, now reduce along the vertical
+        layers.Fun(lambda x: x.sum(2)),
+        # BDW
+        layers.Conv1d(num_classes, 1)
+    )
+```
+
 
 # Training Procedure for Convolutional Networks
 
@@ -59,7 +68,7 @@ Jaderberg, Max, et al. "Deep structured output learning for unconstrained text r
 - compute the loss using the aligned output sequence
 - backpropagate and update weights
 
----
+
 
 # Viterbi Training
 
@@ -71,7 +80,7 @@ Jaderberg, Max, et al. "Deep structured output learning for unconstrained text r
 - treat that alignment as if it were the ground truth and backpropagate
 - this is an example of an EM algorithm
 
----
+
 
 # CTC Training
 
@@ -82,99 +91,110 @@ Identical to traditional HMM training in speech recognition:
 - Viterbi training = Viterbi training
 - CTC training = forward-backward algorithm
 
----
+
 
 # cctc2
 
-        optimizer.zero_grad()
-        output = model(input)
-        aligned = cctc2.align(output, target)
-        loss = mse_loss(aligned, output)
-        loss.backward()
-        optimizer.step()
-
 - with the `cctc2` library, we can make the alignment explicit
 
----
+```python
+def train_batch(input, target):
+    optimizer.zero_grad()
+    output = model(input)
+    aligned = cctc2.align(output, target)
+    loss = mse_loss(aligned, output)
+    loss.backward()
+    optimizer.step()
+```
+
 
 # CTC in PyTorch
-
-        optimizer.zero_grad()
-        output = model(input)
-        loss = ctc_loss(output, target)
-        loss.backward()
-        optimizer.step()
 
 - in PyTorch, CTC is implemented as a loss function
 - `CTCLoss` in PyTorch obscures what's going on
 - all you get is the loss output, not the EM alignment
 - sequences are packed in a special way into batches
 
----
+```python
+def train_batch(input, target):
+    optimizer.zero_grad()
+    output = model(input)
+    loss = ctc_loss(output, target)
+    loss.backward()
+    optimizer.step()
+```
 
-# Word / Text Line Recognition
 
+# Word / Text Line Recognition  
 
-        model = nn.Sequential(
-            *convolutional_layers(),
-            layers.Fun(lambda x: x.sum(2)),
-            layers.Conv1d(num_classes, 1)
-        )
-        ...
-        for input, target in training_dl:
-            optimizer.zero_grad()
-            output = model(input)
-            loss = ctc_loss(output, target)
-            loss.backward()
-            optimizer.step()       
+```python
+def make_model():
+    return nn.Sequential(
+        *convolutional_layers(),
+        layers.Fun(lambda x: x.sum(2)),
+        layers.Conv1d(num_classes, 1)
+    )
 
----
+def train_batch(input, target):
+    optimizer.zero_grad()
+    output = model(input)
+    loss = ctc_loss(output, target)
+    loss.backward()
+    optimizer.step()     
+```
+
 
 # VGG-Like Model
 
-        nn.Sequential(
-            layers.Input("BDHW", sizes=[None, 1, None, None]),
-            *conv2mp(100, 3, 2, repeat=2),
-            *conv2mp(200, 3, 2, repeat=2),
-            *conv2mp(300, 3, 2, repeat=2),
-            *conv2d(400, 3, repeat=2),
-            *project_and_conv1d(800, noutput)
-        )
+```python
+def make_vgg_model():
+    return nn.Sequential(
+        layers.Input("BDHW", sizes=[None, 1, None, None]),
+        *conv2mp(100, 3, 2, repeat=2),
+        *conv2mp(200, 3, 2, repeat=2),
+        *conv2mp(300, 3, 2, repeat=2),
+        *conv2d(400, 3, repeat=2),
+        *project_and_conv1d(800, noutput)
+    )
+```
 
----
 
 # Resnet-Block
 
-        def ResnetBlock(d, r=3):
-            return nn.Sequential(
-                Additive(
-                    nn.Identity(),
-                    nn.Sequential(
-                        nn.Conv2d(d, d, r, padding=r//2), nn.BatchNorm2d(d), nn.ReLU(),
-                        nn.Conv2d(d, d, r, padding=r//2), nn.BatchNorm2d(d)
-                    ),
-                nn.MaxPool2d(2)
-            )
-        
-        def resnet_blocks(n, d, r=3):
-            return [ResnetBlock(d, r) for _ in range(n)]
-
 - NB: we can easily define Resnet etc. in an object-oriented fashion
 
----
+```python
+def ResnetBlock(d, r=3):
+    return nn.Sequential(
+        Additive(
+            nn.Identity(),
+            nn.Sequential(
+                nn.Conv2d(d, d, r, padding=r//2), nn.BatchNorm2d(d), nn.ReLU(),
+                nn.Conv2d(d, d, r, padding=r//2), nn.BatchNorm2d(d)
+            )
+        ),
+        nn.MaxPool2d(2)
+    )
+
+def resnet_blocks(n, d, r=3):
+    return [ResnetBlock(d, r) for _ in range(n)]
+```
+
 
 # Resnet-like Model
 
-        nn.Sequential(
-            layers.Input("BDHW", sizes=[None, 1, None, None]),
-            *conv2mp(64, 3, (2, 1)),
-            *resnet_blocks(5, 64), *conv2mp(128, 3, (2, 1)),
-            *resnet_blocks(5, 128), *conv2mp(256, 3, 2),
-            *resnet_blocks(5, 256), *conv2d(256, 3),
-            *project_and_conv1d(800, noutput)
-        )
+```python
+def make_resnet_model():    
+    return nn.Sequential(
+        layers.Input("BDHW", sizes=[None, 1, None, None]),
+        *conv2mp(64, 3, (2, 1)),
+        *resnet_blocks(5, 64), *conv2mp(128, 3, (2, 1)),
+        *resnet_blocks(5, 128), *conv2mp(256, 3, 2),
+        *resnet_blocks(5, 256), *conv2d(256, 3),
+        *project_and_conv1d(800, noutput)
+    )
+```
 
----
 
 # Footprints
 
@@ -186,7 +206,7 @@ Identical to traditional HMM training in speech recognition:
 
 FIXME add figure
 
----
+
 
 # Problems with VGG/Resnet+Conv1d
 
@@ -200,57 +220,70 @@ Solutions:
 - use upscaling
 - use transposed convolutions
 
----
+
 
 # Less Downscaling using `FractionalMaxPool2d`
-
-        def conv2fmp(d, r, ratio=(0.7, 0.85)):
-            return [
-                flex.Conv2d(d, r, padding=r//2), flex.BatchNorm2d(), nn.ReLU(),
-                nn.FractionalMaxPool2d(3, ratio)
-            ]
-
-        nn.Sequential(
-            layers.Input("BDHW", sizes=[None, 1, None, None]),
-            *conv2fmp(50, 3), *conv2fmp(100, 3), *conv2fmp(150, 3), *conv2fmp(200, 3),
-            layers.Fun("lambda x: x.sum(2)"), # BDHW -> BDW
-            *project_and_conv1d(800, noutput)
-        )
 
 - permits more max pooling steps without making image too small
 - can be performed anisotropically
 - necessary non-uniform spacing may have additional benefits
 
----
+```python
+def conv2fmp(d, r, ratio=(0.7, 0.85)):
+    return [
+        flex.Conv2d(d, r, padding=r//2), flex.BatchNorm2d(), nn.ReLU(),
+        nn.FractionalMaxPool2d(3, ratio)
+    ]
 
-# Upscaling using `torch.nn.functional.interpolate`
+def make_fmp_model():
+    return nn.Sequential(
+        layers.Input("BDHW", sizes=[None, 1, None, None]),
+        *conv2fmp(50, 3), *conv2fmp(100, 3), *conv2fmp(150, 3), *conv2fmp(200, 3),
+        layers.Fun("lambda x: x.sum(2)"), # BDHW -> BDW
+        *project_and_conv1d(800, noutput)
+    )
+```
 
-        nn.Sequential(
-            layers.Input("BDHW", sizes=[None, 1, None, None]),
-            *conv2mp(50, 3), *conv2mp(100, 3), *conv2mp(150, 3), *conv2mp(200, 3),
-            layers.Fun("lambda x: x.interpolate(x, scale=4))
-            *project_and_conv1d(800, noutput)
-        )
-- `interpolate` simply scales an image back up and can be propagated through
-- `MaxPool2d ... block ... interpolate` is a simple multiscale analysis
+
+# Upscaling using `interpolate`
+
+- `interpolate` scales an image, has `backward()`
+- `MaxPool2d...interpolate` is a simple multiscale analysis
 - can be combined with loss functions at each level
 
----
+```python
+def make_interpolating_model():
+    return nn.Sequential(
+        layers.Input("BDHW", sizes=[None, 1, None, None]),
+        *conv2mp(50, 3), *conv2mp(100, 3), *conv2mp(150, 3), *conv2mp(200, 3),
+        layers.Fun("lambda x: x.interpolate(x, scale=4)")
+        *project_and_conv1d(800, noutput)
+    )
+```
+
+<!-- #region -->
 
 # Upscaling using `ConvTranspose1d`
 
-        nn.Sequential(
-            layers.Input("BDHW", sizes=[None, 1, None, None]),
-            *conv2mp(50, 3), *conv2mp(100, 3), *conv2mp(150, 3), *conv2mp(200, 3),
-            layers.Fun("lambda x: x.sum(2)"), # BDHW -> BDW
-            flex.ConvTranspose1d(800, 1, stride=2), # <-- undo too tight spacing
-            *project_and_conv1d(800, noutput)
-        )
 
 - `ConvTranspose2d` fills in higher resolutions with "templates"
 - commonly used in image segmentation and superresolution
 
----
+<!-- #endregion -->
+```python
+def make_ct_model():
+    return nn.Sequential(
+        layers.Input("BDHW", sizes=[None, 1, None, None]),
+        *conv2mp(50, 3), 
+        *conv2mp(100, 3),
+        *conv2mp(150, 3),
+        *conv2mp(200, 3),
+        layers.Fun("lambda x: x.sum(2)"), # BDHW -> BDW
+        flex.ConvTranspose1d(800, 1, stride=2), # <-- undo too tight spacing
+        *project_and_conv1d(800, noutput)
+    )
+```
+
 
 # How well do these work?
 
