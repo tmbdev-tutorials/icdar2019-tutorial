@@ -12,7 +12,6 @@ from torchmore import layers, flex
 # LOCALIZATION
 
 
-
 # OCR Training Data
 
 OCR training data usually consists of:
@@ -25,7 +24,6 @@ We are usually not given:
 - character bounding boxes
 - word bounding boxes (when recognizing text lines)
 - page segmentation (when recognizing whole pages)
-
 
 
 # EM Algorithms
@@ -41,7 +39,6 @@ EM approach:
 - repeat
 
 
-
 # CTC as an EM Algorithm
 
 - perform scanning recognition (e.g. with LSTM)
@@ -54,7 +51,6 @@ CTC gives us horizontal positions of characters but no vertical locations.
 What if we want XY positions for each character? Bounding boxes?
 
 
-
 # Brute Force XY Character Positions
 
 - input: unnormalized word images
@@ -63,31 +59,17 @@ What if we want XY positions for each character? Bounding boxes?
 - train a convolutional neural network using $(x_{CTC}, \mu_y)$ as the location for each character
 
 
-
 # EM Algorithm for XY Character Positions
 
 - input: unnormalized word images
 - have a 2D convolutional network that outputs the probability of the presence of a character at each pixels $(x, y)$
-- reduce the 2D probability map to a 1D probability sequence
-- perform CTC on the 1D sequence as before
-```python
-def reduce_probabilities_2d_to_1d(outputs):
-    # outputs in BDHW format
-    l = outputs.softmax(1)
-    r1 = l[:,1:,:,:].max(2)[0] # BDW
-    r0 = (1-r1.max(1)[0])[:,None,:] # B1W
-    z = torch.cat([r0, r1], dim=1).log().softmax(1)
-    # z in BDL format
-    return z
-```
-
+- perform 2D beam search over positions to best match the transcribed word
 
 # RCNN-like Algorithm
 
 - you can implement region proposal algorithms directly for character bounding boxes
 - the problem is complicated by the fact that there are frequently multiple instances of each character
 - a direct implementation does not take advantage of the known left-to-right ordering of the transcript but simply treats transcripts as bags of characters
-
 
 
 # Segmentation by Backpropagation / Masking

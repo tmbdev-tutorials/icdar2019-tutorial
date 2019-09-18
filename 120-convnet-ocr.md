@@ -12,7 +12,6 @@ from torchmore import flex, layers
 # APPLICATIONS TO OCR
 
 
-
 # Character Recognition
 
 - assuming you have a character segmentation
@@ -20,7 +19,6 @@ from torchmore import flex, layers
   - feed to any of these architectures as if it were an object recognition problem
 
 Goodfellow, Ian J., et al. "Multi-digit number recognition from street view imagery using deep convolutional neural networks." arXiv preprint arXiv:1312.6082 (2013).
-
 
 # Word Recognition
 
@@ -30,7 +28,6 @@ Goodfellow, Ian J., et al. "Multi-digit number recognition from street view imag
 ![word recognition](figs/word-recognition.png)
 
 Jaderberg, Max, et al. "Deep structured output learning for unconstrained text recognition." arXiv preprint arXiv:1412.5903 (2014).
-
 
 
 # Better Techniques
@@ -43,9 +40,7 @@ Jaderberg, Max, et al. "Deep structured output learning for unconstrained text r
   - use sequence learning techniques and CTC for alignment and OCR learning
 
 
-
 # Using Convolutional Networks for OCR
-
 
 ```python
 def make_model():
@@ -69,7 +64,6 @@ def make_model():
 - backpropagate and update weights
 
 
-
 # Viterbi Training
 
 - ground truth: text string = sequence of classes
@@ -79,7 +73,6 @@ def make_model():
 - that alignment gives an output for each time step
 - treat that alignment as if it were the ground truth and backpropagate
 - this is an example of an EM algorithm
-
 
 
 # CTC Training
@@ -92,11 +85,9 @@ Identical to traditional HMM training in speech recognition:
 - CTC training = forward-backward algorithm
 
 
-
 # cctc2
 
 - with the `cctc2` library, we can make the alignment explicit
-
 ```python
 def train_batch(input, target):
     optimizer.zero_grad()
@@ -114,7 +105,6 @@ def train_batch(input, target):
 - `CTCLoss` in PyTorch obscures what's going on
 - all you get is the loss output, not the EM alignment
 - sequences are packed in a special way into batches
-
 ```python
 def train_batch(input, target):
     optimizer.zero_grad()
@@ -126,7 +116,6 @@ def train_batch(input, target):
 
 
 # Word / Text Line Recognition  
-
 ```python
 def make_model():
     return nn.Sequential(
@@ -145,7 +134,6 @@ def train_batch(input, target):
 
 
 # VGG-Like Model
-
 ```python
 def make_vgg_model():
     return nn.Sequential(
@@ -162,7 +150,6 @@ def make_vgg_model():
 # Resnet-Block
 
 - NB: we can easily define Resnet etc. in an object-oriented fashion
-
 ```python
 def ResnetBlock(d, r=3):
     return nn.Sequential(
@@ -182,7 +169,6 @@ def resnet_blocks(n, d, r=3):
 
 
 # Resnet-like Model
-
 ```python
 def make_resnet_model():    
     return nn.Sequential(
@@ -207,7 +193,6 @@ def make_resnet_model():
 FIXME add figure
 
 
-
 # Problems with VGG/Resnet+Conv1d
 
 Problem:
@@ -221,13 +206,11 @@ Solutions:
 - use transposed convolutions
 
 
-
 # Less Downscaling using `FractionalMaxPool2d`
 
 - permits more max pooling steps without making image too small
 - can be performed anisotropically
 - necessary non-uniform spacing may have additional benefits
-
 ```python
 def conv2fmp(d, r, ratio=(0.7, 0.85)):
     return [
@@ -250,7 +233,6 @@ def make_fmp_model():
 - `interpolate` scales an image, has `backward()`
 - `MaxPool2d...interpolate` is a simple multiscale analysis
 - can be combined with loss functions at each level
-
 ```python
 def make_interpolating_model():
     return nn.Sequential(

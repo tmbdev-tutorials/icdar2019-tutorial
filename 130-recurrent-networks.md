@@ -11,8 +11,6 @@ from torchmore import layers, flex
 
 # SEQUENCE MODELING AND RECURRENT NETWORKS
 
-
-
 # Recurrent Networks
 
 Consider a sequence of samples: $x_t$ for $t \in \{0...n\}$
@@ -26,25 +24,17 @@ Recurrent Models:
 
 $$y_t = f(x_t, y_{t-1})$$
 
-
-
 # Simple Recurrent Model
 
 ![simple recurrent](figs/simple-recurrent.png)
-
-
 
 # Unrolling and Vanishing Gradient
 
 ![simple unrolling](figs/simple-recurrent-unrolling.png)
 
-
-
 # LSTM as Memory Cell
 
 ![lstm motivation](figs/lstm-motivation.png)
-
-
 
 # LSTM Networks
 
@@ -58,13 +48,9 @@ output: $y_t = o_t \odot s_t$
 
 $f_t$, $i_t$, and $o_t$ are gates (linear layers, sigmoidal output), $L_s$ is a linear layer with $\tanh$ output
 
-
-
 # Bidirectional LSTM
 
 ![bidirectional lsmt](figs/bdlstm.png)
-
-
 
 # LSTM for OCR (simple)
 
@@ -76,11 +62,7 @@ Simple approach to OCR with LSTM:
 - use these vectors as input to a (BD)LSTM
 - perform CTC alignment
 
-
-
 # LSTM for OCR (simple)
-
-
 ```python
 def make_model():
     return nn.Sequential(
@@ -105,13 +87,9 @@ def train_batch(input, target):
 - works well for size and position normalized inputs
 - works much like an HMM model for OCR
 
-
-
 # Size/Position Normalization for LSTM OCR
 
 ![normalization example](figs/normalization-example.png)
-
-
 
 # Size/Position Normalization
 
@@ -127,24 +105,18 @@ More complex:
 - grayscale images $\rightarrow$ simple thresholding first
 - long lines $\rightarrow$ compute $\mu_y$ and $\Sigma_{yy}$ in overlapping windows for each $x$
 
-
-
 # Word/Line Recognition with Size Normalization
 
 Word image normalization can go into the dataloader's data transformations (or be precomputed):
+```python
+transforms = [
+    lambda image: size_normalize(image),
+    lambda transcript: encode_text(transcript)
+]
 
-        transforms = [
-            lambda image: size_normalize(image),
-            lambda transcript: encode_text(transcript)
-        ]
-        training_dl = DataLoader(WebDataset(..., transforms=transforms))
-
-        for input, target in training_dl:
-            optimizer.zero_grad()
-            output = lstm_model(input)
-            loss = ctc_loss(output, target)
-            loss.backward()
-            optimizer.step()
+def make_loader():
+    return DataLoader(WebDataset(..., transforms=transforms))
+```
 
 <!-- #region -->
 
@@ -180,8 +152,6 @@ Going from "BDHW" image to "BDL" sequence, we have several options:
 - `BDHW_to_BDL_LSTM`
     - trainable reduction, works either position dependent or independent
 
-
-
 # Reduction with LSTM
 
 Reduction with LSTM is similar to seq2seq models: it reduces an entire sequence (pixel rows or columns in this case) to a final state vector.
@@ -204,8 +174,6 @@ class BDHW_to_BDL_LSTM(nn.Module):
 - **reduction**: sum, max, concat/reshape, LSTM
 - **sequence modeling**: none, LSTM
 
-
-
 # What should you use?
 
 Some rules of thumbs:
@@ -216,8 +184,6 @@ Some rules of thumbs:
 - unnormalized + convolution: faster scene text, lower performance
 
 Large literature trying many different combinations of these.
-
-
 
 # Which is "best"?
 

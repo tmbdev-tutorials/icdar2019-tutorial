@@ -2,7 +2,6 @@
 # MODERN DEEP LEARNING ERA
 
 
-
 # Breakthrough Paper
 
 "ImageNet Classification with Deep Convolutional Neural Networks", Alex Krizhevsky, Ilya Sutskever, Geoffrey E. Hinton, 2013
@@ -18,11 +17,9 @@
 None of these were new ideas, but this paper brought it all together.
 
 
-
 # Alexnet Architecture
 
 ![alexnet](figs/alexnet.png)
-
 
 
 # Alexnet Architecture (approximately)
@@ -60,11 +57,9 @@ None of these were new ideas, but this paper brought it all together.
 $\sigma(x) = (1 + e^{-x})^{-1}$, $\rho(x) = \max(0, x)$
 
 
-
 # ReLU Derivatives
 
 ![relu deriv](figs/relu-deriv.png)
-
 
 
 # Nonlinearity Properties
@@ -78,7 +73,6 @@ $\sigma(x) = (1 + e^{-x})^{-1}$, $\rho(x) = \max(0, x)$
 | zero-derivative   | none             | $(-\infty, 0)$    |
 
 
-
 # ReLU
 
 - much faster to compute
@@ -90,7 +84,6 @@ $\sigma(x) = (1 + e^{-x})^{-1}$, $\rho(x) = \max(0, x)$
 - results in classifiers based on linear arrangements
 
 
-
 # Max Pooling
 
 ![max pooling](figs/maxpool.png)
@@ -98,7 +91,6 @@ $\sigma(x) = (1 + e^{-x})^{-1}$, $\rho(x) = \max(0, x)$
 - replaces average pooling, reduces resolution
 - performed per channel
 - nonlinear operation, somewhat similar to morphological operations
-
 
 
 # Local Response Normalization
@@ -113,13 +105,11 @@ $$ y = x \cdot (k + \alpha (K * |x|^\gamma) ^ \beta)^-1 $$
 In later models, this is effectively replaced by batch normalization.
 
 
-
 # Dropout
 
 - randomly turn off units during training
 - motivated by an approximation to an ensemble of networks
 - intended to lead to better generalization from limited samples
-
 
 
 # Data Augmentation
@@ -133,9 +123,7 @@ In later models, this is effectively replaced by batch normalization.
   - addition of noise, distractors, masking
 
 
-
 # FURTHER DEVELOPMENTS
-
 
 
 # Batch Normalization
@@ -148,7 +136,6 @@ In later models, this is effectively replaced by batch normalization.
 - normalization based on batch statistics (and running statistics)
 
 
-
 # Inception
 
 Szegedy, Christian, et al. "Rethinking the inception architecture for computer vision." Proceedings of the IEEE conference on computer vision and pattern recognition. 2016.
@@ -158,7 +145,6 @@ Szegedy, Christian, et al. "Rethinking the inception architecture for computer v
 - "label smoothing"
 
 
-
 # VGG Networks
 
 Simonyan, Karen, and Andrew Zisserman. "Very deep convolutional networks for large-scale image recognition." arXiv preprint arXiv:1409.1556 (2014).
@@ -166,7 +152,6 @@ Simonyan, Karen, and Andrew Zisserman. "Very deep convolutional networks for lar
 - very deep networks with fairly regular structure
 - multiple convolutions + max pooling
 - combined with batch normalization in later systems
-
 
 
 # Residual Networks
@@ -179,9 +164,7 @@ He, Kaiming, et al. "Deep residual learning for image recognition." Proceedings 
 - ReLU and batch normalization is used throughout
 
 
-
 # LOCALIZATION
-
 
 
 # Localization of Objects
@@ -192,7 +175,6 @@ He, Kaiming, et al. "Deep residual learning for image recognition." Proceedings 
   - moving/scanning window
   - region proposals (RCNN etc.)
   - learning dense markers / segmentation
-
 
 
 # Global Classification
@@ -222,7 +204,6 @@ def make_model():
 ![overfeat](figs/overfeat.png)
 
 Sermanet, Pierre, et al. "Overfeat: Integrated recognition, localization and detection using convolutional networks." arXiv preprint arXiv:1312.6229 (2013).
-
 
 
 
