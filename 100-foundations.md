@@ -110,13 +110,15 @@ model = nn.Sequential(
 
 # Bayesian Decision Theory
 
-- classification problems: joint densities of measurements and class labels $P(x, \omega)$
+- joint densities of measurements and class labels $P(x, \omega)$
     - class conditional density: $P(x | \omega)$
+    - often: $P(x | \omega) = \mu_\omega + \hbox{noise}$
     - posterior probability: $P(\omega | x)$
     - Bayes rule: $P(\omega | x) = P(x | \omega) P(\omega) / P(x)$
 - want to minimize the probability of prediction error
 - this is accomplished by choosing $D(x) = \arg\max_\omega P(\omega | x)$
-- this decision rule is Bayes optimal: no other rule can give better performance
+- this decision rule is Bayes optimal
+- i.e. no other rule can give better error rates under 0-1 loss
 
 <!-- #endregion -->
 <!-- #region {"slideshow": {"slide_type": "slide"}} -->
@@ -134,8 +136,10 @@ Therefore:
 
 <!-- #endregion -->
 ```python slideshow={"slide_type": "slide"}
+# generate a simple 1D classification problem
+
 from numpy import random
-n=100
+n=500
 x1 = random.normal(size=n)
 x2 = random.normal(size=n)+2
 data = array(sorted(list(zip(hstack([x1,x2]), [0]*n+[1]*n))))
@@ -145,7 +149,8 @@ plot(inputs[:,0], targets[:,0], alpha=0.1, color="gray")
 scatter(inputs[:,0], targets[:,0], marker='.', c=targets[:,0], cmap=cm.RdBu)
 ```
 
-```python
+```python slideshow={"slide_type": "slide"}
+# kernel density estimate of c.c.d.'s'
 from scipy.ndimage import filters
 def density(samples, lo=-3, hi=6):
     data = zeros(1000, "f")
@@ -153,11 +158,15 @@ def density(samples, lo=-3, hi=6):
     data[coords] = 1.0
     data = filters.gaussian_filter(data, 50.0, mode="constant")
     return data / sum(data)
-plot(linspace(-3, 6, 1000), density(x1)); plot(linspace(-3, 6, 1000), density(x2))
+xs = linspace(-3, 6, 1000)
+plot(xs, density(x1)); plot(xs, density(x2))
 ```
 
-```python
-plot(density(x2) / (density(x1) + density(x2) + 1e-6))
+```python slideshow={"slide_type": "slide"}
+# estimate posterior probability P(class=1|x)
+
+r = (-2, 5)
+plot(linspace(*r, 1000), density(x2, *r) / (density(x1, *r) + density(x2, *r) + 1e-6))
 ```
 
 ```python slideshow={"slide_type": "skip"}
@@ -166,6 +175,7 @@ targets = torch.tensor(targets).float()
 ```
 
 ```python slideshow={"slide_type": "slide"}
+# train a DL model
 model = nn.Sequential(flex.Linear(5), nn.Sigmoid(), flex.Linear(1), nn.Sigmoid())
 flex.shape_inference(model, inputs.shape)
 mseloss = torch.nn.MSELoss()
@@ -182,9 +192,13 @@ plot(losses)
 ```
 
 ```python slideshow={"slide_type": "slide"}
+# MLP posterior estimates vs kernel density estimates
+
 test = torch.tensor(linspace(-1, 3, 1000).reshape(-1, 1)).float()
 pred = model(test)
-plot(test[:,0].detach().numpy(), pred[:,0].detach().numpy())
+plot(test[:,0].detach().numpy(), pred[:,0].detach().numpy(), linewidth=3, color="#4444ff")
+r=(-1, 3)
+plot(linspace(*r, 1000), density(x2, *r) / (density(x1, *r) + density(x2, *r) + 1e-6), color="red", linestyle="--")
 ```
 
 <!-- #region {"slideshow": {"slide_type": "slide"}} -->
@@ -206,20 +220,23 @@ plot(test[:,0].detach().numpy(), pred[:,0].detach().numpy())
 
 # Linear Layers
 
+Deep neural networks are compositions of linear layers:
+
 $y = M\cdot x + b$ -- pure linear regression
 
 $y = \sigma(M\cdot x+b)$ -- logistic regression
 
-$y = H(M \cdot x + b)$ -- linear decision boundaries ($H(x) = \left\lfloor x > 0 \right\rfloor$)
+$y = \left\lfloor M \cdot x + b > 0 \right\rfloor$ -- linear decision boundaries
 
+$y = \max(0, M \cdot x + b)$ -- ReLU layer
 <!-- #endregion -->
 <!-- #region {"slideshow": {"slide_type": "slide"}} -->
 
 # Theory of Linear Classifiers
 
-- functionally equivalent to nearest neighbor classifiers with a single prototype each
-- Bayes-optimal classifier for many classification problems with class-independent noise
-- can be extended to non-linear classification problems by data transformation
+- good for prototype+noise style classification
+- Bayes-optimal classifier for many cases
+- extend to non-linear by augmentation
 - e.g. quadratic augmentation:
     $x \rightarrow (1, x_1,...,x_n, x_1x_1, x_1x_2, ... x_ix_j ..., x_nx_n)$
 - quadratic classifier sufficient for all classification problems with normal c.c.d.'s
@@ -245,11 +262,13 @@ def make_model(n0, n1, n2):
 
 <!-- #region {"slideshow": {"slide_type": "slide"}} -->
 
-# Composition of Layers
+# Linear Layers without Nonlinearities
 
     nn.Sequential(nn.Linear(n0, n1), nn.Linear(n1, n2))
 
 This is effectively the same as `nn.Sequential(nn.Linear(n0, n2))`
+
+Unless `n1<n2`, then it's a "bottleneck" (similar to PCA)
 
 <!-- #endregion -->
 <!-- #region {"slideshow": {"slide_type": "slide"}} -->
@@ -257,7 +276,7 @@ This is effectively the same as `nn.Sequential(nn.Linear(n0, n2))`
 # Scale Factors and Composition
 
 - the scale factor can usually be incorporated into the second linear layer
-- the possibility of scaling means that the sigmoid can operate in its exponential, linear, or logarithmic regime
+- allows sigmoid to function in exponential, linear, or logarithmic regime
 - this analysis changes, however, for ReLU and batch normalization
 
 <!-- #endregion -->
@@ -265,7 +284,8 @@ This is effectively the same as `nn.Sequential(nn.Linear(n0, n2))`
 def make_model(n0, n1, n2, scale):
     return nn.Sequential(
         nn.Linear(n0, n1),
-        nn.Sigmoid(), Fun_(lambda x: scale*x),
+        nn.Sigmoid(),
+        Fun_(lambda x: scale*x),
         nn.Linear(n1, n2))
 ```
 
@@ -273,21 +293,18 @@ def make_model(n0, n1, n2, scale):
 
 # Linear Layer vs RBF
 
-Consider single output from linear layer:
+Linear input layer vs prototype distance:
 
-$y = m \cdot x + b$
-
-Compare:
-
-$y = ||x - \mu||^2 = ||x||^2 - 2 \mu \cdot x + ||\mu||^2$
+$$y = m \cdot x + b$$
+$$y = ||x - \mu||^2 = ||x||^2 - 2 \mu \cdot x + ||\mu||^2$$
 
 Assume normalized inputs $||x||=1$,
 
-$y = -2 \mu \cdot x + ||\mu||^2 + 1 = m \cdot x + b$
+$$y = -2 \mu \cdot x + ||\mu||^2 + 1 = m \cdot x + b$$
 
-for
+with: $m = -2 \mu$ and $b = ||\mu||^2 + 1$
 
-$m = -2 \mu$ and $b = ||\mu||^2 + 1$
+Therefore: linear layers function like RBF, assuming normalized inputs.
 
 <!-- #endregion -->
 <!-- #region {"slideshow": {"slide_type": "slide"}} -->
@@ -318,7 +335,7 @@ PCA attempts to remove noise components while maintaining relevant components.
 
 # Summary of Linear Layers
 
-Linear Layers can compute:
+Linear layers in "classical" neural networks can compute:
 
 - PCA
 - ICA
@@ -327,6 +344,7 @@ Linear Layers can compute:
 
 Which they compute depends on the loss/objective functions, input normalization, training data, and dimensionalities involved.
 
+NB: ReLUs change this.
 <!-- #endregion -->
 <!-- #region {"slideshow": {"slide_type": "slide"}} -->
 
@@ -411,13 +429,21 @@ Convolutional layers are:
 
 ![architecture](figs/lecun-arch.png)
 
-- LeCun: "this creates a feature hierarchy"
-- feature hierarchies motivated by
-  - theoretical limitations of shallow networks
-  - observations of neural activity and processing stages in animals
+
 
 
 <!-- #endregion -->
+<!-- #region {"slideshow": {"slide_type": "slide"}} -->
+# Feature Hierarchies
+
+- LeCun: "this creates a feature hierarchy"
+- feature hierarchies motivated by neuroscience
+- theoretical results
+    - needed for certain geometric computations (book: "Perceptron")
+    - somewhat similar to wavelets, multi-resolution pyramids in vision
+    - arguably can perform some kind of deformable matching
+<!-- #endregion -->
+
 <!-- #region {"slideshow": {"slide_type": "slide"}} -->
 
 ![brain areas](figs/brain-areas.png)
@@ -436,4 +462,20 @@ Convolutional layers are:
   - entire objects
 - little sound theoretical foundation
 
+<!-- #endregion -->
+
+<!-- #region {"slideshow": {"slide_type": "slide"}} -->
+# Summary
+
+So far:
+
+- 1960's perceptrons
+- 1980's backpropagation
+- 1990's convolutional networks
+- also: Bayesian, SVMs, boosting, ERM/VC
+
+Next:
+
+- 2000's recurrent networks
+- 2010's GPUs and ReLUs
 <!-- #endregion -->

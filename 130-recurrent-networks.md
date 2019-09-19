@@ -24,13 +24,28 @@ Recurrent Models:
 
 $$y_t = f(x_t, y_{t-1})$$
 
+# Recurrent Networks vs Linear Filters
+
+Recurrent neural networks are generalizations of IIR linear filters.
+
+Finite Impulse Response Filter
+
+$$ y_i = L(x_{i}, ..., x_{i-k})$$
+
+Infinite Impulse Response Filter
+
+$$ y_i = L(x_{i-1}, x_i) $$
+
+$L$: linear function
+
+
 # Simple Recurrent Model
 
-![simple recurrent](figs/simple-recurrent.png)
+<img src="figs/simple-recurrent.png" style="height: 5in" />
 
 # Unrolling and Vanishing Gradient
 
-![simple unrolling](figs/simple-recurrent-unrolling.png)
+<img src="figs/simple-recurrent-unrolling.png" style="height: 5in" />
 
 # LSTM as Memory Cell
 
@@ -87,6 +102,8 @@ def train_batch(input, target):
 - works well for size and position normalized inputs
 - works much like an HMM model for OCR
 
+Breuel, Thomas M., et al. "High-performance OCR for printed English and Fraktur using LSTM networks." 2013 12th International Conference on Document Analysis and Recognition. IEEE, 2013.
+
 # Size/Position Normalization for LSTM OCR
 
 ![normalization example](figs/normalization-example.png)
@@ -123,10 +140,16 @@ def make_loader():
 # Combining Convolutional Nets with LSTM
 
 
-- we can easily combine convolutional layers with LSTM
-- here is the general scheme; it's complicated many by different data layouts
+We can easily combine convolutional layers with LSTM:
 
+- 2D convolutional network for preprocessing\
+- reduction to 1D sequence
+- 1D LSTM modeling
+
+Breuel, Thomas M., et al. "High-performance OCR for printed English and Fraktur using LSTM networks." 2013 12th International Conference on Document Analysis and Recognition. IEEE, 2013.
 <!-- #endregion -->
+# Combining Convolutional Nets with LSTM
+
 ```python
 def make_model():
     return nn.Sequential(
@@ -141,6 +164,9 @@ def make_model():
 ```
 
 
+Breuel, Thomas M. "High performance text recognition using a hybrid convolutional-lstm implementation." 2017 14th IAPR International Conference on Document Analysis and Recognition (ICDAR). Vol. 1. IEEE, 2017.
+
+
 # Projection Options
 
 Going from "BDHW" image to "BDL" sequence, we have several options:
@@ -151,6 +177,7 @@ Going from "BDHW" image to "BDL" sequence, we have several options:
     - position dependent, after normalization
 - `BDHW_to_BDL_LSTM`
     - trainable reduction, works either position dependent or independent
+    
 
 # Reduction with LSTM
 
@@ -166,13 +193,19 @@ class BDHW_to_BDL_LSTM(nn.Module):
 ```
 
 
+# 2D Scanning
+
+FIXME
+
+
 # Chinese Menu Style Text Recognition
 
 - **input**: normalized, word normalized, line normalized
 - **convolutional** layers: VGG-like, Resnet-like, FMP, U-net-like
 - **scaling layers**: none, interpolation, transposed convolution
 - **reduction**: sum, max, concat/reshape, LSTM
-- **sequence modeling**: none, LSTM
+- **sequence modeling**: none, LSTM, 2D
+
 
 # What should you use?
 
@@ -184,6 +217,7 @@ Some rules of thumbs:
 - unnormalized + convolution: faster scene text, lower performance
 
 Large literature trying many different combinations of these.
+
 
 # Which is "best"?
 
@@ -199,4 +233,3 @@ Results depend on many factors:
 There is no single "best" method.
 
 Any one method can be "best" for some circumstances
-

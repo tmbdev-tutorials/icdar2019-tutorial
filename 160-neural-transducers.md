@@ -120,7 +120,12 @@ Basis:
     - single character neural network model or scanning neural network model (e.g., LeCun 1995)
 - language model: $P(s)$
     - $n$-gram language model:  $\prod P(s_i | s_{i-1}...s_{i-n} )$
-    
+
+
+  
+
+# First Neural Network Models for OCR / Speech
+
 Complications:
 
 - multiple alternative segmentations of the input
@@ -222,6 +227,9 @@ Figure: Prabhavalkar, Rohit, et al. "A Comparison of Sequence-to-Sequence Models
 
 Sutskever, Ilya, Oriol Vinyals, and Quoc V. Le. "Sequence to sequence learning with neural networks." Advances in neural information processing systems. 2014.
 
+
+# SEQ2SEQ FOR DIGIT RECOGNITION
+
 ```python
 from torch import nn
 class Seq2Seq(nn.Module):
@@ -277,7 +285,3 @@ Useful applications:
 
 - potential seq2seq OCR applications (some found in the literature)
 - general purpose language modeling and OCR correction
-
-```python
-
-```

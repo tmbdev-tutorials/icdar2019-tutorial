@@ -11,7 +11,6 @@ from torchmore import flex, layers
 
 # APPLICATIONS TO OCR
 
-
 # Character Recognition
 
 - assuming you have a character segmentation
@@ -20,7 +19,8 @@ from torchmore import flex, layers
 
 Goodfellow, Ian J., et al. "Multi-digit number recognition from street view imagery using deep convolutional neural networks." arXiv preprint arXiv:1312.6082 (2013).
 
-# Word Recognition
+
+# Whole Word Recognition
 
 - perform word localization using Faster RCNN
 - perform whole word recognition as if it were a large object reconition problem
@@ -37,11 +37,22 @@ Jaderberg, Max, et al. "Deep structured output learning for unconstrained text r
 - often require pre-segmented text for training
 - better approaches:
   - use markers for localizing/bounding text (later)
-  - use sequence learning techniques and CTC for alignment and OCR learning
+  - use sequence learning techniques and CTC
+
+# Convolutional Networks for OCR
+
+Historically, LSTM came first, but we're going to start off with convolutional networks analogous to object recognition networks.
+
+Structure:
+
+- perform 2D convolutions over the entire image
+- assume that that has extracted features that correspond to characters
+- project those features into a 1D sequence
+- classify the projected 1D feature sequence into characters
+- perform training using EM alignment (CTC, Viterbi, etc.)
 
 
-# Using Convolutional Networks for OCR
-
+# Convolutional Networks for OCR
 ```python
 def make_model():
     return nn.Sequential(
@@ -55,15 +66,6 @@ def make_model():
 ```
 
 
-# Training Procedure for Convolutional Networks
-
-- pass the input image (BDHW) through the model
-- output is a sequence of vectors (BDW=BDL)
-- perform CTC alignment between output sequence and text string
-- compute the loss using the aligned output sequence
-- backpropagate and update weights
-
-
 # Viterbi Training
 
 - ground truth: text string = sequence of classes
@@ -74,7 +76,6 @@ def make_model():
 - treat that alignment as if it were the ground truth and backpropagate
 - this is an example of an EM algorithm
 
-
 # CTC Training
 
 - like Viterbi training, but instead of finding the best alignment uses an average alignment
@@ -84,8 +85,7 @@ Identical to traditional HMM training in speech recognition:
 - Viterbi training = Viterbi training
 - CTC training = forward-backward algorithm
 
-
-# cctc2
+# CTC training with cctc2
 
 - with the `cctc2` library, we can make the alignment explicit
 ```python
@@ -106,6 +106,8 @@ def train_batch(input, target):
 - all you get is the loss output, not the EM alignment
 - sequences are packed in a special way into batches
 ```python
+ctc_loss = CTCLoss()
+
 def train_batch(input, target):
     optimizer.zero_grad()
     output = model(input)
@@ -190,7 +192,9 @@ def make_resnet_model():
 - footprint calculation:
   - 3x3 convolution, three maxpool operations = 24x24 footprint
 
-FIXME add figure
+# Conv-Only Training
+
+<img src="figs/conv-only.png" style="height: 6in" />
 
 
 # Problems with VGG/Resnet+Conv1d
@@ -204,7 +208,6 @@ Solutions:
 - use fractional max pooling
 - use upscaling
 - use transposed convolutions
-
 
 # Less Downscaling using `FractionalMaxPool2d`
 
@@ -243,6 +246,10 @@ def make_interpolating_model():
     )
 ```
 
+# Upscaling with `interpolate`
+
+<img src="figs/conv-keep.png" style="height: 6in" />
+
 <!-- #region -->
 
 # Upscaling using `ConvTranspose1d`
@@ -276,5 +283,6 @@ def make_ct_model():
 - Great for scene text and degraded documents.
 
 But:
-- You pay a price for translation/rotation/scale robustness: lower performance.
+- You pay a price for translation/scale inv: lower performance.
+- These don't use any recurrent networks, so all information flow is strictly limited to the footprint.
 

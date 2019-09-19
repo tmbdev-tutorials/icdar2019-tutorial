@@ -72,7 +72,6 @@ Chen, Liang-Chieh, et al. "Deeplab: Semantic image segmentation with deep convol
 
 # LAYOUT MODELS
 
-
 # Layout Analysis
 
 Goals of document layout analysis:
@@ -82,12 +81,12 @@ Goals of document layout analysis:
 - find words within text lines
 - determine reading order
 
-
 # Document Segmentation
 
 <img src="figs/docseg-printed.png" style="height=5in" />
 
 Corbelli, Andrea, et al. "Historical document digitization through layout analysis and deep content classification." 2016 23rd International Conference on Pattern Recognition (ICPR). IEEE, 2016.
+
 
 # Historical Layout Analysis
 
@@ -105,6 +104,7 @@ Chen, Kai, et al. "Convolutional neural networks for page segmentation of histor
   - region hypotheses likely difficult to regress from moving windows
   
 Jaderberg, Max, et al. "Reading text in the wild with convolutional neural networks." International Journal of Computer Vision 116.1 (2016): 1-20.
+
 
 # Layout Analysis as Semantic Segmentation
 
@@ -132,7 +132,6 @@ Very different results:
 
 Choice depends on post-processing.
 
-
 # Page Level Segmentation
 
 Page level segmentation divides images into text regions, image regions, and background.
@@ -141,7 +140,6 @@ Page level segmentation divides images into text regions, image regions, and bac
 - segmentations can be computed at a lower level of resolution
 - simple properties like text/image/background can be computed based on local texture / statistics
 - separating adjacent text columns or images may be difficult, since background gaps may be narrow
-
 
 # Page Level Segmentation
 
@@ -155,7 +153,7 @@ Different uses:
 
 # Layout Tasks
 
-<img src="figs/layout-tasks.png" style="width: 8in" />
+<img src="figs/layout-tasks.png" style="width: 10in" />
 
 
 # Simple Approach
@@ -171,7 +169,6 @@ Problem:
 - word bounding boxes are often overlapping
 - how do we turn the resulting binary image into something we can feed to a word recognizer?
 
-
 # Centerline / Baseline Approach
 
 Word/line segmentation:
@@ -179,13 +176,15 @@ Word/line segmentation:
 - assume training data consists of page images and word/line bounding boxes
 - create a binary image that marks either the center line or the baseline of each bounding box
 - learn an image-to-image model predicting the centerline/baseline map from the input document image:
+<!-- #region -->
+# Centerline / Baseline Approach
+
 
 Properties:
 
 - works better than the simple approach
 - still need to use non-DL mechanisms to find the word/line bounding boxes from the seeds
-
-
+<!-- #endregion -->
 # Line Marker Learning
 
 <img src="figs/layout-line-based.png" style="height: 5in" />
@@ -202,13 +201,15 @@ Word/line segmentation:
   - boundary (outline of bounding box)
 - train image-to-image segmentation model to output all three classes
 - recover word/line images via marker morphology
+<!-- #region -->
+# Marker Plus Separator Approach
+
 
 Properties:
 
 - functions like RCNN, in that it finds both the location and the size of object instances (words/lines)
 - simpler to understand/tune: we can see the marker/boundary proposals
-
-
+<!-- #endregion -->
 # Marker-plus-Separator
 
 <table>
@@ -217,6 +218,7 @@ Properties:
         <td><img src="figs/word-segmentation.png" style="width: 6in" /></td>
     </tr>
 </table>
+
 
 # Word Segmentation
 
@@ -304,6 +306,9 @@ Problem:
 - getting training data for layout analysis is difficult
 - manual markup is a lot of work
 
+
+# Semi-Supervised and Weakly Supervised Approaches
+
 Solution:
 
 - text-only / image-only data is easy to get
@@ -312,6 +317,137 @@ Solution:
 - soft labels, taking advantage of posterior probability estimates
 
 
+# END-TO-END SEGMENTATION
+
+
+# Target Generation
+
+- start with `hOCR` output from an existing manually constructed recognizer
+
 ```python
+def target_for_page(image, hocr):
+    htmlparser = etree.HTMLParser()
+    doc = etree.parse(io.BytesIO(hocr), htmlparser)
+    pages = list(doc.xpath('//*[@class="ocr_page"]'))
+    ...
+    for word in page.xpath("//*[@class='ocrx_word']"):
+        ...
+        target[y0-a:y1+a, x0-a:x1+a] = 1
+    for word in page.xpath("//*[@class='ocrx_word']"):
+        ...
+        target[y0-b:y1+b, x0-b:x1+b] = 0
+    for word in page.xpath("//*[@class='ocrx_word']"):
+        ...
+        target[yc-c:yc+c, x0+d:x1-d] = 2
+    return target
 
 ```
+
+- missing words are not that critical
+- remember: networks estimate posteriors
+- e.g. 20% missing means score drops from 1.0 to 0.8
+
+
+# Word Layout Target
+
+<img src="figs/word-layout-target.png" style="height: 6in" />
+
+
+# The Model
+
+```python
+def make_seg_lstm(noutput=3):
+    model = nn.Sequential(
+        layers.Input("BHWD", reorder="BDHW", range=(0, 1), sizes=[None, 1, None, None]),
+        KeepSize(sub=nn.Sequential(
+                *conv2d(50, 5),
+                *conv2mp(50, 3, 2, repeat=3),
+                *conv2mp(100, 3, 2, repeat=3),
+                *conv2d(200, 3, repeat=2),
+                flex.BDHW_LSTM(200)
+            )
+        ),
+        *conv2d(400, 5),
+        flex.Conv2d(noutput, 3)
+    )
+    flex.shape_inference(model, (1, 256, 256, 1))
+    return model
+```
+
+# Word Segmentation Training
+
+<img src="figs/wordseg-training.png" style="height: 6in" />
+
+
+# Markers and Marker Boundaries
+
+<table>
+    <tr>
+        <td><img src="figs/wseg-markerhi.png" style="height: 3in" /></td>
+        <td><img src="figs/wseg-marker-sep.png" style="height: 3in" /></td>
+    </tr>
+</table>
+
+
+```python
+def step1():
+    word_markers = (probs[:,:,2] > 0.5)
+    word_markers = ndi.minimum_filter(ndi.maximum_filter(word_markers, (1, 3)), (1, 3))
+    _, sources = ndi.distance_transform_edt(1-word_markers, return_indices=True)
+    word_sources = word_labels[sources[0], sources[1]]
+    word_boundaries = maximum((roll(word_sources, 1, 0)!=word_sources), roll(word_sources, 1, 1)!=word_sources)
+    word_boundaries = ndi.minimum_filter(ndi.maximum_filter(word_boundaries, 4), 2)
+```
+
+# Word Regions and Marker-Selected
+
+<table>
+    <tr>
+        <td><img src="figs/wseg-regions-minus-boundaries.png" style="height: 3in" /></td>
+        <td><img src="figs/wseg-selected-word-regions.png" style="height: 3in" /></td>
+    </tr>
+</table>
+
+```python
+def step2():
+    separators = maximum(probs[:,:,1]>0.3, word_boundaries)
+    all_components, n = ndi.label(1-separators)
+    word_markers = (probs[:,:,2] > 0.5) * (1-separators)
+    word_markers = ndi.minimum_filter(ndi.maximum_filter(word_markers, (1, 3)), (1, 3))
+    word_labels, n = ndi.label(word_markers)
+    wordmap = corresponding_labels(all_components, word_labels)
+    result = wordmap[all_components]
+```
+
+# Extracted Word Images
+
+<img src="figs/wseg-extracted-words.png" style="height: 4in" />
+
+```python
+def extract_words():
+    for rect in ndi.find_objects(result):
+        rect = pad_rect(5)
+        yield image[rect]
+```
+
+# Benefits of Morphology-Based Approaches
+
+Compare with R-CNN, rectangle regression, etc. approaches.
+
+- very simple code, no special cases
+- easy to visualize markers / boundaries
+- can cope with non-rectangular layouts / regions
+
+
+# Semi-Supervised / Unsupervised Training
+
+We can now use this word extractor for semi-supervised or unsupervised training:
+
+- take unknown documents
+- run word detector (possibly multiple candidates per marker)
+- run word OCR over detected words
+- select words/non-words and optimal rectangle
+- use as more training data
+
+Similar to Fast R-CNN training etc., but without rectangle regression.
+
