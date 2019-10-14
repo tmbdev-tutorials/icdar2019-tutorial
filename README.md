@@ -1,4 +1,4 @@
-ICDAR 2019 Tutorial on Deep Learning for Document Analysis, Text Recognition, and Language Modeling
+ICDAR 2019 Tutorial on Deep Learning for OCR, Document Analysis, Text Recognition, and Language Modeling
 ================================================================================
 
 Thomas Breuel, NVIDIA Research, USA
