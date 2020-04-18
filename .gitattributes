@@ -1,3 +1,8 @@
 *.ipynb linguist-language=Python
 *.tex linguist-detectable=false
 *.html linguist-detectable=false
+*.pdf linguist-detectable=false
+*.md linguist-detectable=false
+html/* linguist-vendored
+Figures/* linguist-vendored
+pdf/* linguist-vendored
